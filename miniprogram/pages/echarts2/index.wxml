@@ -1,0 +1,39 @@
+<!-- pages/echarts/index.wxml -->
+<view class="container">
+  <!-- 图表区域 -->
+  <view class="chart-container">
+    <ec-canvas 
+      id="mychart-dom-test1"
+      canvas-id="mychart-test1" 
+      ec="{{ ec1 }}"
+      style="width: 100%; height: 100%;">
+    </ec-canvas>
+  </view>
+
+  <!-- 数据表格区域 -->
+  <view class="table-container">
+    <view class="table-header">
+      <text class="header-cell">时间戳 (t)</text>
+      <text class="header-cell">数值 (value)</text>
+    </view>
+    
+    <!-- <scroll-view 
+      class="table-body"
+      scroll-y
+      style="height: 50%;">
+      <view 
+        class="table-row"
+        wx:for="{{tableData}}"
+        wx:key="timestamp">
+        <text class="body-cell">{{item.t.toFixed(2)}}s</text>
+        <text class="body-cell">{{item.value.toFixed(2)}}</text>
+      </view>
+    </scroll-view> -->
+
+    <!-- 操作按钮 -->
+    <view class="action-buttons">
+      <button class="export-btn" bindtap="exportCSV">导出CSV</button>
+      <button class="export-btn" bindtap="clearData">清空数据</button>
+    </view>
+  </view>
+</view>

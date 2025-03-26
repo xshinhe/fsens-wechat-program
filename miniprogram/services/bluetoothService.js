@@ -3,18 +3,13 @@
 class BluetoothService {
   constructor() {
     this.devices = []; // 存储搜索到的蓝牙设备
-    this.services = {}; // 存储服务列表，键为deviceId
-    this.characteristics = {}; // 存储特征列表，键为deviceId
-    this.isScanning = false; // 是否正在扫描
-    this.isConnecting = false; // 是否正在连接
-    this.connectedDevice = null; // 当前连接的设备
-    this.receivedDataCallbacks = {}; // 存储接收数据的回调函数，键为deviceId
+    this.services = []; // 存储服务列表
+    this.characteristics = []; // 存储特征列表
+    this.isAdvertising = false; // 是否正在广播
+    this.receivedData = ''; // 接收到的数据
     this.globalData = getApp().globalData; // 获取全局数据对象
     this.globalData.bluetoothState = false; // 初始化蓝牙适配器状态为未开启
     this.globalData.connectState = false; // 初始化蓝牙连接状态为未连接
-    this.previousConnections = []; // 存储之前连接过的设备ID
-    this.storageKey = 'previousConnections'; // 本地存储的键名
-    this.loadPreviousConnections(); // 加载之前连接过的设备
   }
 
   /**
@@ -22,11 +17,10 @@ class BluetoothService {
    */
   async initialize() {
     try {
-      await this.openBluetoothAdapter();
+      this.openBluetoothAdapter();
       this.onBluetoothAdapterStateChange();
       this.onBLEConnectionStateChange();
       console.log('蓝牙适配器初始化成功');
-      // await this.autoConnect(); // @todo
     } catch (error) {
       console.error('初始化蓝牙适配器失败:', error);
       throw error;
@@ -35,41 +29,17 @@ class BluetoothService {
 
   /**
    * 等待指定的时间（以毫秒为单位）
-   * @param {number} ms - 等待的时间（毫秒）
+   * @param {number} i - 等待的时间（毫秒）
    * @returns {Promise} - 一个在指定时间后解决的Promise
    */
-  wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  wait(i) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, i);
+    });
   }
-
-  /**
-   * 加载之前连接过的设备
-   */
-  loadPreviousConnections() {
-    const storedConnections = wx.getStorageSync(this.storageKey);
-    if (storedConnections) {
-      this.previousConnections = storedConnections;
-      console.log('加载之前连接过的设备?:', this.previousConnections);
-    }
-  }
-
-  /**
-   * 保存之前连接过的设备
-   */
-  savePreviousConnections() {
-    wx.setStorageSync(this.storageKey, this.previousConnections);
-    console.log('保存之前连接过的设备:', this.previousConnections);
-  }
-
-  /**
-   * 清除之前连接过的设备信息
-   */
-  clearPreviousConnections() {
-    this.previousConnections = [];
-    wx.removeStorageSync(this.storageKey);
-    console.log('已清除之前连接过的设备信息');
-  }
-
+  
   /**
    * 初始化微信蓝牙适配器
    * @returns {Promise}
@@ -107,7 +77,6 @@ class BluetoothService {
         success: (res) => {
           this.globalData.bluetoothState = false;
           this.globalData.connectState = false;
-          this.connectedDevice = null;
           console.log('蓝牙适配器已关闭');
           resolve({ ok: true, errCode: 0, errMsg: '' });
         },
@@ -127,11 +96,10 @@ class BluetoothService {
       if (res.available) {
         this.globalData.bluetoothState = true;
         console.log('蓝牙适配器已开启');
-        // 可以在这里添加自动连接逻辑
+        // 可以在这里添加更多逻辑，如自动连接等
       } else {
         this.globalData.bluetoothState = false;
         this.globalData.connectState = false;
-        this.connectedDevice = null;
         console.log('蓝牙适配器已关闭');
       }
     });
@@ -144,14 +112,13 @@ class BluetoothService {
     wx.onBLEConnectionStateChange((res) => {
       if (res.connected) {
         this.globalData.connectState = true;
-        this.connectedDevice = res.deviceId;
+        console.log('1212');
         console.log('蓝牙连接成功');
         wx.hideLoading();
         wx.showToast({
           title: '连接成功',
           icon: 'success',
         });
-        this.reconnectAttempts = 0; // 重置重连尝试次数 @todo
       } else {
         this.globalData.connectState = false;
         console.log('蓝牙连接已断开');
@@ -160,62 +127,39 @@ class BluetoothService {
           title: '连接已断开',
           icon: 'none',
         });
-        // 如果是用户主动断开，则不进行自动重连 @todo
-        if (res.deviceId === this.connectedDevice) {
-          this.connectedDevice = null;
-        }
       }
     });
-  }
-
-  /**
-   * 自动连接之前连接过的设备
-   */
-  async autoConnect() {
-    if (this.previousConnections.length === 0) {
-      console.log('没有之前连接过的设备');
-      return;
-    }
-
-    for (let deviceId of this.previousConnections) {
-      try {
-        await this.connect(deviceId);
-        break; // 如果连接成功，则退出循环
-      } catch (error) {
-        console.error(`重新连接设备 ${deviceId} 失败:`, error);
-      }
-    }
   }
 
   /**
    * 开始搜索蓝牙设备
-   * @returns {Promise}
+   * @param {function} callback - 回调函数，用于传递搜索到的设备信息
    */
-  async startBluetoothDevicesDiscovery() {
-    if (this.isScanning) {
+  async startBluetoothDevicesDiscovery(callback) {
+    if (this.isDiscovering) {
       console.warn('蓝牙设备搜索已经在进行中');
       return;
     }
 
-    this.isScanning = true;
+    this.isDiscovering = true;
 
-    return new Promise((resolve, reject) => {
-      wx.startBluetoothDevicesDiscovery({
+    try {
+      await wx.startBluetoothDevicesDiscovery({
         allowDuplicatesKey: true,
         success: (res) => {
           wx.onBluetoothDeviceFound((res) => {
-            this.devices = [...this.devices, ...res.devices];
-            // 可以在这里添加去重逻辑
+            callback(res.devices);
           });
-          resolve({ ok: true, errCode: 0, errMsg: '' });
         },
         fail: (res) => {
           console.error('开始搜索蓝牙设备失败:', res);
-          this.isScanning = false;
-          reject(res);
+          throw res;
         },
       });
-    });
+    } catch (error) {
+      this.isDiscovering = false;
+      throw error;
+    }
   }
 
   /**
@@ -223,89 +167,63 @@ class BluetoothService {
    * @returns {Promise}
    */
   async stopBluetoothDevicesDiscovery() {
-    if (!this.isScanning) {
+    if (!this.discoveryLock) {
       console.warn('蓝牙设备搜索未在进行中');
       return;
     }
 
-    return new Promise((resolve, reject) => {
-      wx.stopBluetoothDevicesDiscovery({
+    try {
+      await wx.stopBluetoothDevicesDiscovery({
         success: (res) => {
-          this.isScanning = false;
+          this.discoveryLock = false;
           console.log('停止搜索蓝牙设备');
-          resolve({ ok: true, errCode: 0, errMsg: '' });
         },
         fail: (res) => {
           console.error('停止搜索蓝牙设备失败:', res);
-          this.isScanning = false;
-          reject(res);
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg });
+          this.discoveryLock = false;
+          throw res;
         },
       });
-    });
+    } catch (error) {
+      this.discoveryLock = false;
+      throw error;
+    }
   }
 
   /**
-   * 连接指定的蓝牙设备
+   * 开始连接指定的蓝牙设备
    * @param {string} deviceId - 蓝牙设备的ID
-   * @returns {Promise}
+   * @param {string} deviceName - 蓝牙设备的名称（默认为“未知设备”）
    */
-  async connect(deviceId) {
-    if (this.isConnecting) {
-      console.warn('正在连接蓝牙设备');
-      return;
-    }
-
-    this.isConnecting = true;
-
-    return new Promise((resolve, reject) => {
-      wx.createBLEConnection({
-        deviceId: deviceId,
-        timeout: 10000, // 连接超时时间为10秒
-        success: (res) => {
-          this.isConnecting = false;
-          this.connectedDevice = deviceId;
-          this.globalData.connectState = true;
-          console.log('蓝牙连接成功');
-          // 保存连接信息
-          if (!this.previousConnections.includes(deviceId)) {
-            this.previousConnections.push(deviceId);
-            this.savePreviousConnections();
-          }
-          resolve({ ok: true, errCode: 0, errMsg: '' });
-        },
-        fail: (res) => {
-          this.isConnecting = false;
-          console.error('连接蓝牙设备失败:', res);
-          reject(res);
-        },
-      });
+  startConnect(deviceId, deviceName = '未知设备') {
+    wx.createBLEConnection({
+      deviceId: deviceId,
+      timeout: 10000, // 连接超时时间为10秒
+      success: (res) => {
+        wx.navigateTo({
+          url: `/pages/service/service?deviceId=${deviceId}&deviceName=${deviceName}`,
+        });
+      },
+      fail: (res) => {
+        console.error('连接蓝牙设备失败:', res);
+      },
     });
   }
 
   /**
-   * 断开与当前蓝牙设备的连接
-   * @returns {Promise}
+   * 断开与指定蓝牙设备的连接
+   * @param {string} deviceId - 蓝牙设备的ID
    */
-  async disconnect() {
-    if (!this.connectedDevice) {
-      console.warn('没有连接的蓝牙设备');
-      return;
-    }
-
-    return new Promise((resolve, reject) => {
-      wx.closeBLEConnection({
-        deviceId: this.connectedDevice,
-        success: (res) => {
-          this.globalData.connectState = false;
-          this.connectedDevice = null;
-          console.log('断开蓝牙连接成功');
-          resolve({ ok: true, errCode: 0, errMsg: '' });
-        },
-        fail: (res) => {
-          console.error('断开蓝牙连接失败:', res);
-          reject(res);
-        },
-      });
+  endConnect(deviceId) {
+    wx.closeBLEConnection({
+      deviceId: deviceId,
+      success: (res) => {
+        console.log('断开蓝牙连接成功');
+      },
+      fail: (res) => {
+        console.error('断开蓝牙连接失败:', res);
+      },
     });
   }
 
@@ -314,7 +232,7 @@ class BluetoothService {
    * @param {string} deviceId - 蓝牙设备的ID
    * @returns {Promise}
    */
-  async getServices(deviceId) {
+  async getBLEDeviceServices(deviceId) {
     return new Promise((resolve, reject) => {
       wx.getBLEDeviceServices({
         deviceId: deviceId,
@@ -322,12 +240,12 @@ class BluetoothService {
           const services = res.services.filter((item) => {
             return !/^000018/.test(item.uuid);
           });
-          this.services[deviceId] = services;
+          this.services = services;
           resolve({ ok: true, errCode: 0, errMsg: '', data: services });
         },
         fail: (res) => {
           console.error('获取设备服务失败:', res);
-          reject(res);
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg });
         },
       });
     });
@@ -339,18 +257,18 @@ class BluetoothService {
    * @param {string} serviceId - 服务的UUID
    * @returns {Promise}
    */
-  async getCharacteristics(deviceId, serviceId) {
+  async getBLEDeviceCharacteristics(deviceId, serviceId) {
     return new Promise((resolve, reject) => {
       wx.getBLEDeviceCharacteristics({
         deviceId: deviceId,
         serviceId: serviceId,
         success: (res) => {
-          this.characteristics[deviceId] = res.characteristics;
+          this.characteristics = res.characteristics;
           resolve({ ok: true, errCode: 0, errMsg: '', data: res.characteristics });
         },
         fail: (res) => {
           console.error('获取设备特征值失败:', res);
-          reject(res);
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg });
         },
       });
     });
@@ -358,15 +276,14 @@ class BluetoothService {
 
   /**
    * 监听蓝牙特征值变化
-   * @param {string} deviceId - 蓝牙设备的ID
    * @param {function} callback - 回调函数，用于传递接收到的数据
    */
-  onDataReceive(deviceId, callback) {
+  onBLECharacteristicValueChange(callback) {
     wx.onBLECharacteristicValueChange((res) => {
-      if (res.deviceId === deviceId) {
-        let receiverText = this.buf2string(res.value);
-        callback(receiverText);
-      }
+      console.log('接收到蓝牙数据:', res);
+      let receiverText = this.buf2string(res.value);
+      this.receivedData = receiverText;
+      callback(receiverText);
     });
   }
 
@@ -378,7 +295,7 @@ class BluetoothService {
    * @param {ArrayBuffer} data - 要发送的数据
    * @returns {Promise}
    */
-  async sendData(deviceId, serviceId, characteristicId, data) {
+  async writeBLECharacteristicValue(deviceId, serviceId, characteristicId, data) {
     return new Promise((resolve, reject) => {
       wx.writeBLECharacteristicValue({
         deviceId: deviceId,
@@ -406,25 +323,7 @@ class BluetoothService {
     var arr = Array.prototype.map.call(new Uint8Array(buffer), (x) => x);
     return arr.map((char) => String.fromCharCode(char)).join('');
   }
-
-  /**
-   * 自动连接之前连接过的设备
-   */
-  async autoConnect() {
-    if (this.previousConnections.length === 0) {
-      console.log('没有之前连接过的设备');
-      return;
-    }
-
-    for (let deviceId of this.previousConnections) {
-      try {
-        await this.connect(deviceId);
-        break; // 如果连接成功，则退出循环
-      } catch (error) {
-        console.error(`连接设备 ${deviceId} 失败:`, error);
-      }
-    }
-  }
 }
 
 export default BluetoothService;
+

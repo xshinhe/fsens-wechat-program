@@ -8,7 +8,7 @@
     "pages/central/service/service",
     "pages/central/character/character",
     "pages/peripheral/index/index",
-    "pages/echarts/index",
+    "pages/echarts2/index",
     "pages/index/index",
     "pages/eplot/bar/index",
     "pages/eplot/measureText/index",
@@ -60,7 +60,7 @@
         "text": "外围设备"
       },
       {
-        "pagePath": "pages/echarts/index",
+        "pagePath": "pages/echarts2/index",
         "text": "图表"
       },
       {
