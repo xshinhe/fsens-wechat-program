@@ -1,0 +1,22 @@
+/* pages/peripheral/peripheral.wxss */
+.container {
+  padding: 20px;
+}
+
+.status {
+  margin-bottom: 20px;
+}
+
+.button {
+  margin-bottom: 10px;
+  width: 100%;
+  height: 40px;
+  background-color: #1AAD19;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+.data {
+  margin-top: 20px;
+}

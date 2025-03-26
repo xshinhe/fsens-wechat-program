@@ -1,0 +1,7 @@
+<!-- components/deviceInfo/deviceInfo.wxml -->
+<view class="deviceInfo">
+  <text>设备状态:</text>
+  <text>接收到的数据: {{receivedData}}</text>
+  <text>广播状态: {{isAdvertising ? '正在广播' : '未广播'}}</text>
+  <text>连接状态: {{isConnected ? '已连接' : '未连接'}}</text>
+</view>

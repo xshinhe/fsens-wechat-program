@@ -1,0 +1,122 @@
+page {
+  margin: 0;
+  padding: 0;
+}
+
+.toolBar {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: rgb(192, 134, 134);
+  display: flex;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  font-size: 40rpx;
+  /* margin-bottom: 20rpx; */
+  border: solid 2rpx black;
+}
+
+.rssi-descend {
+  /* background-color: red; */
+  display: flex;
+  font-size: 30rpx;
+  justify-content: center;
+  align-items: center;
+}
+
+.search-item {
+  /* margin: 0 10rpx; */
+  /* background-color: pink; */
+  display: flex;
+  justify-content: space-between;
+  padding: 10rpx;
+  border-top: 1rpx solid grey;
+  border-bottom: 1rpx solid grey;
+}
+
+.search-item .d_name {
+  font-size: 50rpx;
+  font-weight: bold;
+}
+
+.search-item .d_addr,.d_rssi,.d_connectable,.d_service,.d_deviceid {
+  font-size: 35rpx;
+  font-weight: lighter;
+}
+
+.search-item .s-i-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* background-color: red; */
+}
+
+.search-item .connect-icon {
+  width: 100rpx;
+  height: 100rpx;
+}
+
+.gotopBtn {
+  position: fixed;
+  right: 20rpx;
+  bottom: 20rpx;
+  font-size: 40rpx;
+  font-weight: bold;
+  width: 60px;
+  height: 60px;
+  background-color: lightblue;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Toastbox style */
+.toast-box {
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  /* filter: blur(10px); */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.showToast {
+  margin: 10rpx;
+  border: solid 5rpx black;
+  border-radius: 16rpx;
+  background-color: lightgray;
+}
+
+.toast-title {
+  padding-left: 5%;
+  background-color: #2196f3;
+  color: white;
+  padding-top: 2vh;
+  padding-bottom: 2vh;
+  border-radius: 16rpx;
+}
+
+.toast-main {
+  padding: 10rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  /* background-color: white; */
+}
+
+.toast-button {
+  width: 100%;
+  background-color: #2196f3;
+  color: white;
+}
+
+.toast-item {
+  padding: 10rpx;
+  border-bottom: solid 2rpx black;
+}

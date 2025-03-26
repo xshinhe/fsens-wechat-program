@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "deviceInfo": "../../../utils/components/deviceInfo/deviceInfo"
+  },
+  "navigationBarTitleText": "外围设备"
+}

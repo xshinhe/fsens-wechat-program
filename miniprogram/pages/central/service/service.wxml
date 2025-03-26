@@ -1,0 +1,3 @@
+<!--pages/central/service/service.wxml-->
+<text>pages/central/service/service.wxml</text>
+<button bind:tap="gotoCharacter">go to character</button>

@@ -1,0 +1,345 @@
+/**
+ * 蓝牙BLE操作类
+ * @author xshinhe
+ */
+class sdBLE {
+  /**
+   * 构造函数，初始化蓝牙设备列表和全局数据中的蓝牙状态
+   */
+  constructor() {
+    this.devs = []; // 存储搜索到的蓝牙设备
+    this.globalData = getApp().globalData; // 获取全局数据对象
+    this.globalData.bluetoothState = false; // 初始化蓝牙适配器状态为未开启
+    this.globalData.connectState = false; // 初始化蓝牙连接状态为未连接
+  }
+
+  /**
+   * 等待指定的时间（以毫秒为单位）
+   * @param {number} i - 等待的时间（毫秒）
+   * @returns {Promise} - 一个在指定时间后解决的Promise
+   */
+  wait(i) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve();
+      }, i);
+    });
+  }
+
+  /**
+   * 初始化微信蓝牙适配器
+   * @returns {Promise} - 一个Promise，解析为初始化结果
+   */
+  openBluetoothAdapter() {
+    return new Promise((resolve, reject) => {
+      wx.openBluetoothAdapter({
+        success: (res) => {
+          this.globalData.bluetoothState = true; // 更新蓝牙状态为开启
+          resolve({ ok: true, errCode: 0, errMsg: "" }); // 成功回调
+        },
+        fail: (res) => {
+          this.globalData.bluetoothState = false; // 更新蓝牙状态为未开启
+          console.log("openBluetoothAdapter fail ", res); // 打印错误信息
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 失败回调
+        },
+      });
+    });
+  }
+
+  /**
+   * 关闭蓝牙适配器
+   * @returns {Promise} - 一个Promise，解析为关闭结果
+   */
+  closeBluetoothAdapter() {
+    return new Promise((resolve, reject) => {
+      wx.closeBluetoothAdapter({
+        success: (res) => {
+          resolve({ ok: true, errCode: 0, errMsg: "" }); // 成功回调
+        },
+        fail: (res) => {
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 失败回调
+        },
+      });
+    });
+  }
+
+  /**
+   * 监听蓝牙适配器状态变化
+   * 当蓝牙适配器状态变化时，更新全局蓝牙状态并相应地显示或隐藏加载提示
+   */
+  onBluetoothAdapterStateChange() {
+    wx.onBluetoothAdapterStateChange((res) => {
+      if (res.available) {
+        this.globalData.bluetoothState = true; // 更新蓝牙状态为开启
+        wx.openBluetoothAdapter({
+          success: (res) => {
+            this.globalData.bluetoothState = true; // 确认蓝牙状态为开启
+            wx.hideLoading(); // 隐藏加载提示
+          },
+        });
+      } else {
+        this.globalData.bluetoothState = false; // 更新蓝牙状态为未开启
+        this.globalData.connectState = false; // 更新连接状态为未连接
+        wx.showLoading({
+          title: "请开启手机蓝牙", // 显示加载提示，提示用户开启蓝牙
+        });
+      }
+    });
+  }
+
+  /**
+   * 监听BLE蓝牙连接状态变化
+   * 当蓝牙连接状态变化时，更新全局连接状态并显示相应的提示
+   */
+  onBLEConnectionStateChange() {
+    wx.onBLEConnectionStateChange((res) => {
+      if (res.connected) {
+        wx.hideLoading(); // 隐藏加载提示
+        wx.showToast({
+          title: "连接成功", // 显示连接成功的提示
+          icon: "success",
+          success: (res) => {
+            this.globalData.connectState = true; // 更新连接状态为已连接
+          },
+        });
+      } else {
+        wx.hideLoading(); // 隐藏加载提示
+        wx.showToast({
+          title: "已断开连接", // 显示连接断开的提示
+          icon: "none",
+          success: (res) => {
+            this.globalData.connectState = false; // 更新连接状态为未连接
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * 开始搜索蓝牙设备
+   * @param {function} callback - 回调函数，用于传递搜索到的设备信息
+   */
+  startBluetoothDevicesDiscovery(callback) {
+    let _devs = []; // 存储搜索到的设备
+    var ctx = this; // 保存当前上下文
+    wx.startBluetoothDevicesDiscovery({
+      allowDuplicatesKey: true, // 允许重复的设备
+      success: (res) => {
+        wx.onBluetoothDeviceFound((res) => {
+          callback(res.devices); // 调用回调函数，传递搜索到的设备
+          return;
+          // 以下代码用于过滤重复设备并更新设备列表
+          let isExist = false;
+          if (devices.deviceId) {
+            for (let item of _devs) {
+              if (item.deviceId === devices.deviceId) {
+                isExist = true;
+                break;
+              }
+            }
+            if (!isExist && devices.name != "") {
+              _devs.push(devices);
+              ctx.devs.push(devices);
+              callback(devices.name, devices.RSSI, devices.deviceId);
+            }
+          } else if (devices.devices) {
+            for (let item of _devs) {
+              if (item.deviceId === devices.devices[0].deviceId) {
+                isExist = true;
+                break;
+              }
+            }
+            if (!isExist && devices.devices[0].name != "") {
+              _devs.push(devices.devices[0]);
+              ctx.devs.push(devices.devices[0]);
+              callback(
+                devices.devices[0].name,
+                devices.devices[0].RSSI,
+                devices.devices[0].deviceId
+              );
+            }
+          } else if (devices[0]) {
+            for (let item of _devs) {
+              if (item.deviceId === devices[0].deviceId) {
+                isExist = true;
+                break;
+              }
+            }
+            if (!isExist && devices[0].name != "") {
+              _devs.push(devices[0]);
+              ctx.devs.push(devices[0]);
+              callback(devices[0].name, devices[0].RSSI, devices[0].deviceId);
+            }
+          }
+        });
+      },
+    });
+  }
+
+  /**
+   * 停止蓝牙扫描
+   * @returns {Promise} - 一个Promise，解析为停止扫描的结果
+   */
+  stopBluetoothDevicesDiscovery() {
+    return new Promise((resolve, reject) => {
+      wx.stopBluetoothDevicesDiscovery({
+        success: (res) => {
+          resolve({ ok: true, errCode: 0, errMsg: "" }); // 成功回调
+        },
+        fail: (res) => {
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 失败回调
+        },
+      });
+    });
+  }
+
+  /**
+   * 开始连接指定的蓝牙设备
+   * @param {string} deviceId - 蓝牙设备的ID
+   * @param {string} deviceName - 蓝牙设备的名称（默认为“未知设备”）
+   */
+  startConnect(deviceId, deviceName = "未知设备") {
+    if (this.globalData.bluetoothState) {
+      wx.createBLEConnection({
+        deviceId: deviceId,
+        timeout: 10000, // 连接超时时间为10秒
+        success: (res) => {
+          wx.navigateTo({
+            url: `/pages/service/service?deviceId=${deviceId}&deviceName=${deviceName}`, // 导航到服务页面，并传递设备ID和名称
+          });
+        },
+      });
+    }
+  }
+
+  /**
+   * 断开与指定蓝牙设备的连接
+   * @param {string} deviceId - 蓝牙设备的ID
+   */
+  endConnect(deviceId) {
+    if (this.globalData.bluetoothState) {
+      wx.closeBLEConnection({
+        deviceId: deviceId,
+        success: (res) => {
+          // 可以在这里添加断开连接后的逻辑
+        },
+      });
+    }
+  }
+
+  /**
+   * 获取指定蓝牙设备的GATT服务列表
+   * @param {string} deviceId - 蓝牙设备的ID
+   * @returns {Promise} - 一个Promise，解析为获取到的服务列表
+   */
+  getBLEDeviceServices(deviceId) {
+    return new Promise((resolve, reject) => {
+      wx.getBLEDeviceServices({
+        deviceId: deviceId,
+        success: (res) => {
+          const services = res.services.filter((item, i) => {
+            return !/^000018/.test(item.uuid); // 过滤掉以000018开头的UUID的服务
+          });
+          resolve({ ok: true, errCode: 0, errMsg: "", data: services }); // 返回过滤后的服务列表
+        },
+        fail: (res) => {
+          wx.showToast({
+            title: "设备服务获取失败", // 显示获取服务失败的提示
+            icon: "none",
+          });
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 返回错误信息
+        },
+      });
+    });
+  }
+
+  /**
+   * 获取指定服务的蓝牙特征值列表
+   * @param {string} deviceId - 蓝牙设备的ID
+   * @param {string} serviceId - 服务的UUID
+   * @returns {Promise} - 一个Promise，解析为获取到的特征值列表
+   */
+  getBLEDeviceCharacteristics(deviceId, serviceId) {
+    return new Promise((resolve, reject) => {
+      wx.getBLEDeviceCharacteristics({
+        deviceId: deviceId,
+        serviceId: serviceId,
+        success: (res) => {
+          resolve({
+            ok: true,
+            errCode: 0,
+            errMsg: "",
+            data: res.characteristics, // 返回特征值列表
+          });
+        },
+        fail: (res) => {
+          wx.showToast({
+            title: "设备特征值获取失败", // 显示获取特征值失败的提示
+            icon: "none",
+          });
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 返回错误信息
+        },
+      });
+    });
+  }
+
+  /**
+   * 监听蓝牙特征值变化
+   * 当有数据发送过来时，解析数据并通过回调函数传递出去
+   * @param {function} callback - 回调函数，用于传递接收到的数据
+   */
+  onBLECharacteristicValueChange(callback) {
+    wx.onBLECharacteristicValueChange((res) => {
+      console.log("onBLECharacter", res); // 打印接收到的数据
+      let receiverText = this.buf2string(res.value); // 将接收到的数据从Buffer转换为字符串
+      callback(receiverText); // 调用回调函数，传递接收到的数据
+    });
+  }
+
+  /**
+   * 向蓝牙设备发送数据
+   * @param {string} deviceId - 蓝牙设备的ID
+   * @param {string} serviceId - 服务的UUID
+   * @param {string} writeCharacteristicId - 特征的UUID
+   * @param {ArrayBuffer} sendPackage - 要发送的数据包
+   * @param {number} index - 数据包的索引（默认为0）
+   * @returns {Promise} - 一个Promise，解析为发送结果
+   */
+  writeBLECharacteristicValue(deviceId, serviceId, writeCharacteristicId, sendPackage, index = 0) {
+    let i = index;
+    let len = sendPackage.length;
+    return new Promise((resolve, reject) => {
+      if (!len || len <= i) {
+        resolve({ ok: false, errCode: 0, errMsg: '数据长度为：' + len }); // 返回数据长度错误
+      }
+      wx.writeBLECharacteristicValue({
+        deviceId: deviceId,
+        serviceId: serviceId,
+        characteristicId: writeCharacteristicId,
+        value: sendPackage, // 要发送的数据
+        success(res) {
+          resolve({ ok: true, errCode: 0, errMsg: '' }); // 发送成功
+        },
+        fail(res) {
+          resolve({ ok: false, errCode: res.errCode, errMsg: res.errMsg }); // 发送失败
+        }
+      });
+    });
+  }
+
+  /**
+   * 将Buffer转换为字符串
+   * @param {ArrayBuffer} buffer - 要转换的Buffer
+   * @returns {string} - 转换后的字符串
+   */
+  buf2string(buffer) {
+    var arr = Array.prototype.map.call(new Uint8Array(buffer), (x) => x); // 将Buffer转换为数组
+    return arr
+      .map((char, i) => {
+        return String.fromCharCode(char); // 将每个字节转换为对应的字符
+      })
+      .join(""); // 将字符连接成字符串
+  }
+}
+
+export { sdBLE }; // 导出sdBLE类

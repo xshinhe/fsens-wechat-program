@@ -1,0 +1,24 @@
+<!-- pages/peripheral/peripheral.wxml -->
+<view class="container">
+  <view class="status">
+    <text>蓝牙状态: {{isPeripheralReady ? '已初始化' : '未初始化'}}</text>
+    <text>广播状态: {{isAdvertising ? '正在广播' : '未广播'}}</text>
+    <text>连接状态: {{isConnected ? '已连接' : '未连接'}}</text>
+  </view>
+
+  <button bindtap="toggleAdvertising" class="button">
+    {{isAdvertising ? '停止广播' : '开始广播'}}
+  </button>
+
+  <button bindtap="sendData" class="button">
+    发送数据
+  </button>
+
+  <view class="data">
+    <text>接收到的数据:</text>
+    <text>{{receivedData}}</text>
+  </view>
+
+  <!-- 设备信息组件 -->
+  <deviceInfo receivedData="{{receivedData}}" isAdvertising="{{isAdvertising}}" isConnected="{{isConnected}}"></deviceInfo>
+</view>

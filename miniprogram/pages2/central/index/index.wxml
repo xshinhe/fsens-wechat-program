@@ -1,0 +1,78 @@
+<view class="toolBar">
+  <view bind:tap="doScan" >
+    <view wx:if="{{isDiscovering}}">正在扫描</view>
+    <view wx:else>开始扫描</view>
+  </view>
+  
+  <view class="rssi-descend" bind:tap="rssiDescend">RSSI降序排序</view>
+
+  <view bind:tap="setFilter">
+    <view wx:if="{{isFilterHidden}}">显示过滤设置</view>
+    <view wx:else>关闭过滤设置</view>
+  </view>
+</view>
+<view class="scanFilter" hidden="{{isFilterHidden}}">
+  <label class="scan-filter-cbx">
+    <switch type="checkbox" model:checked="{{filter_by_name}}" bindchange="switchChanged" data-id="1"/>只显示有名字的设备
+  </label>
+  <view>
+    <label class="filter-by-rssi">
+      <switch type="checkbox" model:checked="{{filter_by_rssi}}" bindchange="switchChanged" data-id="2"/>通过RSSI过滤设备
+    </label>
+    <view class="slider">
+      <text>最小的RSSI:{{min_rssi}}</text>
+      <slider bindchanging="sliderChanging" min="-200" max="-50" show-value/>
+    </view>
+  </view>
+</view>
+<scroll-view class="search-items" scroll-y>
+  <view wx:for="{{devices_list}}" wx:key="index" class="search-item" bindtap="showDetailAdv" data-device="{{item}}">
+    <view class="s-i-left">
+      <view class="d_name">{{item.name}}</view>
+      <view class="d_addr">{{item.addr}}</view>
+      <view class="d_rssi">{{item.RSSI}}dBm</view>
+      <view wx:if="{{item.advertisServiceUUIDs}}">
+        <view class="d_service">service: {{item.advertisServiceUUIDs.length}}</view>
+      </view>
+
+      <!-- <view wx:if="{{item.connectable}}" class="d_connectable">
+        可连接
+      </view>
+      <view wx:else class="d_connectable">
+        不可连接
+      </view> -->
+
+    </view>
+    <view class="s-i-right">
+      <view wx-if="{{item.connectable}}" catch:tap="doConnect">
+        <image src="/imgags/more.png" class="connect-icon"></image>
+      </view>
+    </view>
+  </view>
+  <view class="gotopBtn" hidden="{{!cangotop}}" catchtap="goTop">Back</view>
+</scroll-view>
+<!-- <button bindtap="showActionSheet">show action sheet</button> -->
+
+<view class='toast-box' hidden='{{!showToastBox}}' catchtouchmove="toast_touch_move">
+  <view class='showToast'>
+      <view class='toast-title'>
+          <text>广播包详细信息：</text>
+      </view>
+      <view class='toast-main'>
+        <view class="toast-item">name: {{showDetailAdvDevice.name}}</view>
+        <view class="toast-item">deviceId: {{showDetailAdvDevice.deviceId}}</view>
+        <view class="toast-item">RSSI: {{showDetailAdvDevice.RSSI}}dBm</view>
+        <!-- <view class="toast-item">ManufaturerData: {{typeof showDetailAdvDevice.advertisData === "undefined"}}</view> -->
+
+        <view class="toast-item">
+          <view>Service UUID:</view>
+          <view wx:for="{{showDetailAdvDevice.advertisServiceUUIDs}}" wx:key="index">
+            <view>{{item}}</view>
+          </view>
+        </view>
+
+        <view class="toast-item"> connectable: {{showDetailAdvDevice.connectable}}</view>
+      </view>
+      <button catchtap='toast_confirm' class="toast-button">确定</button>
+  </view>
+</view>

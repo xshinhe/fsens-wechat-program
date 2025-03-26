@@ -1,0 +1,76 @@
+{
+  "pages0": [
+    "pages/commu/ble/index",
+    "pages/commu/wifi/index"
+  ],
+  "pages": [
+    "pages/central/index/index",
+    "pages/central/service/service",
+    "pages/central/character/character",
+    "pages/peripheral/index/index",
+    "pages/echarts/index",
+    "pages/index/index",
+    "pages/eplot/bar/index",
+    "pages/eplot/measureText/index",
+    "pages/eplot/line/index",
+    "pages/eplot/scatter/index",
+    "pages/eplot/sunburst/index",
+    "pages/eplot/funnel/index",
+    "pages/eplot/radar/index",
+    "pages/eplot/gauge/index",
+    "pages/eplot/pie/index",
+    "pages/eplot/k/index",
+    "pages/eplot/heatmap/index",
+    "pages/eplot/tree/index",
+    "pages/eplot/treemap/index",
+    "pages/eplot/map/index",
+    "pages/eplot/graph/index",
+    "pages/eplot/boxplot/index",
+    "pages/eplot/parallel/index",
+    "pages/eplot/sankey/index",
+    "pages/eplot/themeRiver/index",
+    "pages/eplot/lazyLoad/index",
+    "pages/eplot/multiCharts/index",
+    "pages/eplot/move/index",
+    "pages/eplot/saveCanvas/index",
+    "pages/eplot/loadImage/index",
+    "pages/logs/logs"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "丝碳纪元智能传感",
+    "navigationBarBackgroundColor": "#743481"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "tabBar": {
+    "custom": false,
+    "backgroundColor": "#743481",
+    "color": "#999999",
+    "selectedColor": "#3bafcc",
+    "list": [
+      {
+        "pagePath": "pages/central/index/index",
+        "text": "中心设备"
+      },
+      {
+        "pagePath": "pages/peripheral/index/index",
+        "text": "外围设备"
+      },
+      {
+        "pagePath": "pages/echarts/index",
+        "text": "图表"
+      },
+      {
+        "pagePath": "pages/index/index",
+        "text": "图表2"
+      },
+      {
+        "pagePath": "pages/logs/logs",
+        "text": "Log"
+      }
+    ]
+  }
+}

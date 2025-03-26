@@ -1,0 +1,4 @@
+<!-- pages/echarts/index.wxml -->
+<view class="container">
+  <canvas canvas-id="mychart" id="mychart" style="width: 100%; height: 100%;"></canvas>
+</view>

@@ -1,0 +1,137 @@
+// services/bluetoothService.js
+import { sdBLE } from '../utils/sdBLE.js';
+
+class BluetoothService {
+  constructor() {
+    this.sdBLE = new sdBLE();
+    this.services = [];
+    this.characteristics = [];
+    this.isAdvertising = false;
+    this.receivedData = '';
+  }
+
+  /**
+   * 初始化蓝牙适配器
+   * @returns {Promise}
+   */
+  async initialize() {
+    try {
+      await this.sdBLE.openBluetoothAdapter();
+      console.log('蓝牙适配器初始化成功');
+    } catch (error) {
+      console.error('初始化蓝牙适配器失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 创建服务和特征
+   * @param {string} serviceUUID
+   * @param {string} characteristicUUID
+   * @returns {Promise}
+   */
+  async createService(serviceUUID, characteristicUUID) {
+    try {
+      // 创建服务
+      const service = await this.sdBLE.createBLEPeripheralService(serviceUUID);
+      this.services.push(service);
+
+      // 创建特征
+      const characteristic = await this.sdBLE.createBLEPeripheralCharacteristic(serviceUUID, characteristicUUID, {
+        properties: {
+          read: true,
+          write: true,
+          notify: true
+        },
+        permissions: {
+          read: true,
+          write: true
+        },
+        descriptors: [
+          {
+            uuid: '00002902-0000-1000-8000-00805F9B34FB',
+            value: new ArrayBuffer(0)
+          }
+        ]
+      });
+      this.characteristics.push(characteristic);
+      console.log('服务和特征创建成功');
+    } catch (error) {
+      console.error('创建服务和特征失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 开始广播
+   * @param {Array} serviceUUIDs
+   * @returns {Promise}
+   */
+  async startAdvertising(serviceUUIDs) {
+    try {
+      const manufacturerData = new Uint8Array([]);
+      await this.sdBLE.startBluetoothAdvertising({
+        serviceUUIDs: serviceUUIDs,
+        manufacturerData: manufacturerData
+      });
+      this.isAdvertising = true;
+      console.log('开始广播');
+    } catch (error) {
+      console.error('开始广播失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 停止广播
+   * @returns {Promise}
+   */
+  async stopAdvertising() {
+    try {
+      await this.sdBLE.stopBluetoothAdvertising();
+      this.isAdvertising = false;
+      console.log('停止广播');
+    } catch (error) {
+      console.error('停止广播失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 处理接收到的数据
+   * @param {Function} callback
+   */
+  onReceivedData(callback) {
+    this.sdBLE.onBLECharacteristicValueChange((data) => {
+      this.receivedData = data;
+      callback(data);
+    });
+  }
+
+  /**
+   * 发送数据
+   * @param {string} data
+   */
+  sendData(data) {
+    const serviceId = this.services[0].uuid;
+    const characteristicId = this.characteristics[0].uuid;
+    const buffer = new ArrayBuffer(data.length);
+    const dataView = new DataView(buffer);
+    for (let i = 0; i < data.length; i++) {
+      dataView.setUint8(i, data.charCodeAt(i));
+    }
+    this.sdBLE.writeBLECharacteristicValue(serviceId, characteristicId, buffer)
+      .then(res => {
+        if (res.ok) {
+          console.log('发送数据成功');
+        } else {
+          console.error('发送数据失败:', res.errMsg);
+        }
+      })
+      .catch(err => {
+        console.error('发送数据异常:', err);
+      });
+  }
+}
+
+export default BluetoothService;
